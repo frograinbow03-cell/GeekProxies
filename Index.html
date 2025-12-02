@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeekProxies | Unrestricted Access</title>
+    <meta name="description" content="A sleek, modern web proxy frontend for unrestricted browsing.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        /* Custom Geek/Cyber Theme */
+        :root {
+            --neon-green: #00ff9d;
+            --neon-purple: #bc13fe;
+            --bg-dark: #0a0a0c;
+            --bg-panel: #111116;
+            --text-main: #e0e0e0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* App-like feel */
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Glassmorphism Sidebar */
+        .sidebar {
+            background: rgba(17, 17, 22, 0.95);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Glowing Effects */
+        .glow-text {
+            text-shadow: 0 0 10px rgba(0, 255, 157, 0.3);
+        }
+        
+        .input-glow:focus {
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.15);
+            border-color: var(--neon-green);
+        }
+
+        /* Tab Transitions */
+        .tab-content {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            height: 100%;
+            width: 100%;
+        }
+
+        .tab-content.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        /* Loader Animation */
+        .loader {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid var(--neon-green);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Iframe Container */
+        #proxy-frame-container {
+            flex: 1;
+            width: 100%;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            display: none; /* Hidden until URL is entered */
+        }
+
+        #proxy-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--neon-green);
+        }
+
+        /* Developer Card Hover */
+        .dev-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .dev-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px -10px rgba(0, 255, 157, 0.2);
+        }
+    </style>
+</head>
+<body class="h-screen flex text-gray-300 selection:bg-green-500 selection:text-black">
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar w-20 lg:w-64 h-full flex flex-col justify-between transition-all duration-300 z-50">
+        <div>
+            <!-- Logo Area -->
+            <div class="h-20 flex items-center justify-center lg:justify-start lg:px-6 border-b border-white/5">
+                <i class="fa-solid fa-ghost text-2xl text-[#00ff9d]"></i>
+                <span class="hidden lg:block ml-3 font-bold text-xl tracking-wider text-white">Geek<span class="text-[#00ff9d]">Proxies</span></span>
+            </div>
+
+            <!-- Navigation Items -->
+            <div class="mt-8 flex flex-col gap-2 px-3">
+                <button onclick="switchTab('proxy')" id="btn-proxy" class="nav-btn w-full p-3 rounded-xl flex items-center justify-center lg:justify-start gap-4 text-white bg-white/5 hover:bg-white/10 transition-all group">
+                    <i class="fa-solid fa-globe text-lg group-hover:text-[#00ff9d] transition-colors"></i>
+                    <span class="hidden lg:block font-medium">Browse</span>
+                </button>
+
+                <button onclick="switchTab('devs')" id="btn-devs" class="nav-btn w-full p-3 rounded-xl flex items-center justify-center lg:justify-start gap-4 text-gray-400 hover:text-white hover:bg-white/5 transition-all group">
+                    <i class="fa-solid fa-code text-lg group-hover:text-[#bc13fe] transition-colors"></i>
+                    <span class="hidden lg:block font-medium">Developers</span>
+                </button>
+                
+                <button onclick="switchTab('settings')" id="btn-settings" class="nav-btn w-full p-3 rounded-xl flex items-center justify-center lg:justify-start gap-4 text-gray-400 hover:text-white hover:bg-white/5 transition-all group">
+                    <i class="fa-solid fa-gear text-lg group-hover:text-blue-400 transition-colors"></i>
+                    <span class="hidden lg:block font-medium">Settings</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Bottom Info -->
+        <div class="p-4 border-t border-white/5 hidden lg:block">
+            <div class="bg-white/5 rounded-lg p-3">
+                <p class="text-xs text-gray-500 uppercase font-mono mb-1">Status</p>
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-[#00ff9d] animate-pulse"></div>
+                    <span class="text-xs text-white">System Operational</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 h-full relative overflow-hidden bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-green-900/20 via-[#0a0a0c] to-[#0a0a0c]">
+        
+        <!-- PROXY TAB -->
+        <div id="tab-proxy" class="tab-content active flex-col items-center justify-center p-6 lg:p-12">
+            
+            <!-- Search Container (Centered initially) -->
+            <div id="search-container" class="w-full max-w-3xl flex flex-col items-center transition-all duration-500">
+                
+                <!-- Hero Text -->
+                <div class="text-center mb-8 space-y-2">
+                    <h1 class="text-4xl lg:text-6xl font-bold text-white tracking-tight">
+                        Unblock the <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#00ff9d] to-emerald-600">Web</span>
+                    </h1>
+                    <p class="text-gray-400 text-lg">Stealth browsing at warp speed.</p>
+                </div>
+
+                <!-- Input Bar -->
+                <div class="w-full relative group">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-[#00ff9d] to-[#bc13fe] rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                    <div class="relative bg-[#111116] rounded-xl flex items-center p-2 border border-white/10 shadow-2xl">
+                        <div class="pl-4 pr-3 text-gray-500">
+                            <i class="fa-solid fa-lock text-[#00ff9d]"></i>
+                        </div>
+                        <input type="text" id="url-input" 
+                            placeholder="Type a URL or search query..." 
+                            class="w-full bg-transparent text-white text-lg p-3 outline-none font-mono placeholder-gray-600"
+                            autocomplete="off">
+                        <button onclick="loadProxy()" class="bg-[#00ff9d] hover:bg-[#00cc7d] text-black font-bold py-3 px-6 rounded-lg transition-transform active:scale-95 flex items-center gap-2">
+                            <span>Go</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div class="mt-8 flex flex-wrap justify-center gap-4">
+                    <button onclick="quickLink('https://discord.com')" class="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-[#5865F2]/20 hover:text-[#5865F2] border border-white/5 transition-all">
+                        <i class="fa-brands fa-discord"></i> Discord
+                    </button>
+                    <button onclick="quickLink('https://youtube.com')" class="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-red-500/20 hover:text-red-500 border border-white/5 transition-all">
+                        <i class="fa-brands fa-youtube"></i> YouTube
+                    </button>
+                    <button onclick="quickLink('https://tiktok.com')" class="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-pink-500/20 hover:text-pink-500 border border-white/5 transition-all">
+                        <i class="fa-brands fa-tiktok"></i> TikTok
+                    </button>
+                    <button onclick="quickLink('https://reddit.com')" class="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-orange-500/20 hover:text-orange-500 border border-white/5 transition-all">
+                        <i class="fa-brands fa-reddit"></i> Reddit
+                    </button>
+                </div>
+            </div>
+
+            <!-- Iframe Display (Full Screen Overlay mode) -->
+            <div id="browser-interface" class="hidden flex-col absolute inset-0 bg-[#0a0a0c] z-50">
+                <!-- Browser Toolbar -->
+                <div class="h-14 bg-[#111116] border-b border-white/10 flex items-center px-4 gap-4">
+                    <button onclick="closeBrowser()" class="p-2 hover:bg-white/10 rounded-full text-gray-400 hover:text-white transition-colors" title="Close Proxy">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    
+                    <div class="flex items-center gap-2">
+                        <button class="p-2 hover:bg-white/10 rounded-full text-gray-400" title="Back">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </button>
+                        <button class="p-2 hover:bg-white/10 rounded-full text-gray-400" title="Refresh" onclick="refreshFrame()">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex-1 bg-black/20 rounded-full h-9 flex items-center px-4 text-xs font-mono text-gray-500 truncate" id="browser-url-display">
+                        https://google.com
+                    </div>
+
+                    <button class="p-2 hover:bg-white/10 rounded-full text-gray-400" title="Open in New Tab" onclick="openNewTab()">
+                        <i class="fa-solid fa-external-link-alt"></i>
+                    </button>
+                </div>
+
+                <!-- The Actual Frame -->
+                <div class="flex-1 relative">
+                    <div id="loader" class="absolute inset-0 flex items-center justify-center bg-[#0a0a0c] z-10">
+                        <div class="flex flex-col items-center gap-4">
+                            <div class="loader"></div>
+                            <div class="text-sm text-gray-500 font-mono">ESTABLISHING SECURE TUNNEL...</div>
+                        </div>
+                    </div>
+                    <!-- Note: In a real deployment, src would be processed by a backend proxy -->
+                    <iframe id="proxy-frame" src="" sandbox="allow-same-origin allow-scripts allow-forms allow-pointer-lock" allowfullscreen></iframe>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- DEVELOPERS TAB -->
+        <div id="tab-devs" class="tab-content flex-col p-8 lg:p-16 overflow-y-auto">
+            <h2 class="text-3xl font-bold text-white mb-2">The <span class="text-[#bc13fe]">Masterminds</span></h2>
+            <p class="text-gray-400 mb-10 max-w-2xl">The team behind GeekProxies dedicated to keeping the internet open and free.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Notageek Card -->
+                <div class="dev-card bg-[#111116] border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <i class="fa-solid fa-terminal text-6xl text-[#00ff9d]"></i>
+                    </div>
+                    
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-[#00ff9d] to-blue-900 flex items-center justify-center text-black text-2xl font-bold shadow-lg shadow-green-500/20">
+                            N
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-white">Notageek</h3>
+                            <span class="text-xs font-mono text-[#00ff9d] bg-[#00ff9d]/10 px-2 py-1 rounded">LEAD DEVELOPER</span>
+                        </div>
+                    </div>
+                    
+                    <p class="text-gray-400 text-sm leading-relaxed mb-6">
+                        Full-stack wizard and security enthusiast. Built the core routing engine for GeekProxies. "It's not a bug, it's an undocumented feature."
+                    </p>
+
+                    <div class="flex gap-3">
+                        <a href="#" class="p-2 bg-white/5 rounded-lg hover:bg-white/10 hover:text-white text-gray-400 transition-colors"><i class="fa-brands fa-github"></i></a>
+                        <a href="#" class="p-2 bg-white/5 rounded-lg hover:bg-[#5865F2]/20 hover:text-[#5865F2] text-gray-400 transition-colors"><i class="fa-brands fa-discord"></i></a>
+                    </div>
+                </div>
+
+                <!-- Placeholder Dev 2 -->
+                <div class="dev-card bg-[#111116] border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
+                     <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <i class="fa-solid fa-shield-halved text-6xl text-[#bc13fe]"></i>
+                    </div>
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-[#bc13fe] to-purple-900 flex items-center justify-center text-white text-2xl font-bold">
+                            ?
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-white">Contributor Needed</h3>
+                            <span class="text-xs font-mono text-[#bc13fe] bg-[#bc13fe]/10 px-2 py-1 rounded">FRONTEND</span>
+                        </div>
+                    </div>
+                    <p class="text-gray-400 text-sm leading-relaxed mb-6">
+                        We are looking for sleek UI designers to help improve the GeekProxies experience. Apply on Discord.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SETTINGS TAB -->
+        <div id="tab-settings" class="tab-content flex-col p-8 lg:p-16">
+            <h2 class="text-3xl font-bold text-white mb-8">Settings</h2>
+            
+            <div class="max-w-xl space-y-6">
+                <!-- Cloak Setting -->
+                <div class="bg-[#111116] p-6 rounded-2xl border border-white/5">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="font-bold text-white">Tab Cloaking</h3>
+                            <p class="text-sm text-gray-400">Disguise this tab as something educational.</p>
+                        </div>
+                        <div class="text-[#00ff9d] text-xl"><i class="fa-solid fa-mask"></i></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="cloakTab('Google Drive')" class="p-3 bg-white/5 rounded-lg hover:bg-white/10 text-sm text-left flex items-center gap-2">
+                            <i class="fa-brands fa-google-drive text-green-400"></i> Google Drive
+                        </button>
+                        <button onclick="cloakTab('Classroom')" class="p-3 bg-white/5 rounded-lg hover:bg-white/10 text-sm text-left flex items-center gap-2">
+                            <i class="fa-solid fa-chalkboard-user text-green-600"></i> Classroom
+                        </button>
+                        <button onclick="cloakTab('Wikipedia')" class="p-3 bg-white/5 rounded-lg hover:bg-white/10 text-sm text-left flex items-center gap-2">
+                            <i class="fa-brands fa-wikipedia-w text-gray-400"></i> Wikipedia
+                        </button>
+                        <button onclick="cloakTab('Reset')" class="p-3 bg-white/5 rounded-lg hover:bg-red-500/10 text-red-400 text-sm text-left flex items-center gap-2">
+                            <i class="fa-solid fa-rotate-left"></i> Reset
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Proxy Service Selection -->
+                <div class="bg-[#111116] p-6 rounded-2xl border border-white/5">
+                    <h3 class="font-bold text-white mb-2">Proxy Backend</h3>
+                    <p class="text-sm text-gray-400 mb-4">Select the service node.</p>
+                    <select class="w-full bg-black/20 border border-white/10 rounded-lg p-2 text-gray-300 outline-none focus:border-[#00ff9d]">
+                        <option>Ultraviolet (US-East)</option>
+                        <option>Rammerhead (Europe)</option>
+                        <option>Womginx (Asia)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- Tab Switching Logic ---
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            // Show selected tab
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+
+            // Update Sidebar Buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-white/5', 'text-white');
+                btn.classList.add('text-gray-400');
+            });
+            const activeBtn = document.getElementById(`btn-${tabName}`);
+            activeBtn.classList.remove('text-gray-400');
+            activeBtn.classList.add('bg-white/5', 'text-white');
+        }
+
+        // --- Proxy/Browser Logic ---
+        const urlInput = document.getElementById('url-input');
+        const browserInterface = document.getElementById('browser-interface');
+        const proxyFrame = document.getElementById('proxy-frame');
+        const searchContainer = document.getElementById('search-container');
+        const urlDisplay = document.getElementById('browser-url-display');
+        const loader = document.getElementById('loader');
+
+        // Handle "Enter" key
+        urlInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                loadProxy();
+            }
+        });
+
+        function quickLink(url) {
+            urlInput.value = url;
+            loadProxy();
+        }
+
+        function loadProxy() {
+            let rawUrl = urlInput.value.trim();
+            if (!rawUrl) return;
+
+            // Basic URL formatting
+            if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://')) {
+                // If it looks like a domain, add https, otherwise search google
+                if (rawUrl.includes('.') && !rawUrl.includes(' ')) {
+                    rawUrl = 'https://' + rawUrl;
+                } else {
+                    rawUrl = 'https://www.google.com/search?q=' + encodeURIComponent(rawUrl);
+                }
+            }
+
+            // UI Transition
+            browserInterface.classList.remove('hidden');
+            browserInterface.classList.add('flex');
+            urlDisplay.textContent = rawUrl;
+            
+            // Show Loader
+            loader.style.display = 'flex';
+
+            // ATTEMPT LOAD
+            // Note: In a real environment, this would go through a proxy middleware like /service/route?url=...
+            // Direct iframe embedding often fails for big sites (Google, etc.) due to X-Frame-Options.
+            // For this demo, we simulate the "attempt".
+            
+            setTimeout(() => {
+                proxyFrame.src = rawUrl;
+                loader.style.display = 'none';
+            }, 1000); // Fake connection delay
+        }
+
+        function closeBrowser() {
+            browserInterface.classList.add('hidden');
+            browserInterface.classList.remove('flex');
+            proxyFrame.src = 'about:blank';
+            urlInput.value = '';
+        }
+
+        function refreshFrame() {
+            if(proxyFrame.src) {
+                loader.style.display = 'flex';
+                proxyFrame.src = proxyFrame.src;
+                setTimeout(() => loader.style.display = 'none', 500);
+            }
+        }
+
+        function openNewTab() {
+            if(proxyFrame.src) {
+                window.open(proxyFrame.src, '_blank');
+            }
+        }
+
+        // --- Tab Cloaking Logic ---
+        function cloakTab(type) {
+            if (type === 'Google Drive') {
+                document.title = 'My Drive - Google Drive';
+                changeFavicon('https://ssl.gstatic.com/images/branding/product/1x/drive_2020q4_32dp.png');
+            } else if (type === 'Classroom') {
+                document.title = 'Home';
+                changeFavicon('https://ssl.gstatic.com/images/branding/product/1x/classroom_2020q4_32dp.png');
+            } else if (type === 'Wikipedia') {
+                document.title = 'Wikipedia';
+                changeFavicon('https://en.wikipedia.org/static/favicon/wikipedia.ico');
+            } else {
+                document.title = 'GeekProxies | Unrestricted Access';
+                // Reset favicon logic would require storing original favicon
+            }
+        }
+
+        function changeFavicon(src) {
+            let link = document.querySelector("link[rel~='icon']");
+            if (!link) {
+                link = document.createElement('link');
+                link.rel = 'icon';
+                document.getElementsByTagName('head')[0].appendChild(link);
+            }
+            link.href = src;
+        }
+
+        // Initialize with Proxy tab active
+        switchTab('proxy');
+    </script>
+</body>
+</html>
