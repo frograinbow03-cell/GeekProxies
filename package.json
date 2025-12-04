@@ -1,0 +1,12 @@
+{
+  "name": "geekproxies-sw",
+  "version": "1.0.0",
+  "description": "Scramjet dependency for client-side proxy.",
+  "main": "index.html",
+  "dependencies": {
+    "@mercuryworkshop/scramjet": "^2.0.0-alpha"
+  },
+  "scripts": {
+    "postinstall": "mkdir -p ./scram && cp -r node_modules/@mercuryworkshop/scramjet/dist/* ./scram/"
+  }
+}
